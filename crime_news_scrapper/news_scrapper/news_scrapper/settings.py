@@ -92,6 +92,13 @@ REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
 
+HTTPERROR_ALLOWED_CODES = [504]
+DOWNLOAD_TIMEOUT = 90  # Set Scrapy download timeout to 90 seconds
+SPLASH_TIMEOUT = 120   # Set Splash-specific timeout to 120 seconds
+RETRY_HTTP_CODES = [500, 502, 503, 504]
+RETRY_TIMES = 5
+
+# Scrapy-splash configuration
 SPLASH_URL = 'http://localhost:8050'
 DOWNLOADER_MIDDLEWARES = {
     'scrapy_splash.SplashCookiesMiddleware': 723,
