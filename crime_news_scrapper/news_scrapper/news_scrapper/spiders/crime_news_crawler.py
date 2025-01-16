@@ -1,10 +1,8 @@
-import json
-
-import scrapy
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 
 from news_scrapper.parsers.india_today_parser import IndiaTodayParser
+from news_scrapper.parsers.indian_express_parser import IndianExpressParser
 
 
 class CrimeNewsSpider(CrawlSpider):

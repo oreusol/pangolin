@@ -1,14 +1,20 @@
+from logging import INFO
 from news_scrapper.items import NewsScrapperItem
 from scrapy_splash import SplashRequest
 
 from news_scrapper.parsers.news_website_parser import NewsWebsiteParser
-
+from config import load_config
 
 class IndianExpressParser(NewsWebsiteParser):
     """Parses data from indianexpress.com website"""
     
     def __init__(self):
-        super().__init__()
+        config = load_config(file_path=self.CONFIG_PATH)
+        self.config = config.get("indian_express_parser", {})
+        if self.config:
+            log_level = self.config.get("log_level", INFO)
+            log_path = self.config.get("file_name", "/home/madhura/projects/pangolin/crime_news_scrapper/indian_express.log")
+        super().__init__(log_level=log_level, file_name=log_path)
         self.seen_urls = set()
         self.source = "TheIndianEXPRESS"
 
@@ -58,7 +64,7 @@ class IndianExpressParser(NewsWebsiteParser):
 
     def parse_front_page(self, response):
         # sends a splash request to already load the data from load more
-        self.logger.info(f"Sending the splash request to load all the data from {source.lower()}.com page")
+        self.logger.info(f"Sending the splash request to load all the data from {self.source.lower()}.com page")
         yield SplashRequest(url=response.url, callback=self.parse_data,
                             endpoint='execute',
                             args={'lua_source': self.lua_script, "timeout": 3000},)

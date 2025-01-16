@@ -1,0 +1,6 @@
+india_today_parser:
+  log_level: INFO
+  file_name: "/home/madhura/projects/pangolin/crime_news_scrapper/india_today.log"
+indian_express_parser:
+  log_level: INFO
+  file_name: "/home/madhura/projects/pangolin/crime_news_scrapper/indian_express.log"
