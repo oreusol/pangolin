@@ -1,7 +1,7 @@
 from logging import INFO
-from news_scrapper.items import NewsScrapperItem
 from scrapy_splash import SplashRequest
 
+from news_scrapper.items import NewsScrapperItem
 from news_scrapper.parsers.news_website_parser import NewsWebsiteParser
 from config import load_config
 

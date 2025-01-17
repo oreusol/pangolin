@@ -2,3 +2,4 @@ six
 scrapy==2.11.2
 scrapy-splash
 pyyaml
+python-json-logger
