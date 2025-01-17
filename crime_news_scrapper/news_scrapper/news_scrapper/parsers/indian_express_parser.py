@@ -4,6 +4,7 @@ from scrapy_splash import SplashRequest
 from news_scrapper.items import NewsScrapperItem
 from news_scrapper.parsers.news_website_parser import NewsWebsiteParser
 from config import load_config
+from news_scrapper.const import ItemField
 
 class IndianExpressParser(NewsWebsiteParser):
     """Parses data from indianexpress.com website"""
@@ -81,26 +82,26 @@ class IndianExpressParser(NewsWebsiteParser):
                 if url in self.seen_urls:
                     self.logger.info(f"This data is already scrapped: {url}. Hence continuing...")
                     continue
-            news_item["source"] = self.source
-            news_item["title"] = story.xpath("./div/h3/a/text()").get()
-            news_item["date"] = story.xpath("./div/p/text()").get()
-            news_item["url"] = url
-            news_item["description"] = story.xpath("./div/p[position()=2]/text()").get()
-            news_item["location"] = ""
+            news_item[ItemField.SOURCE.value] = self.source
+            news_item[ItemField.TITLE.value] = story.xpath("./div/h3/a/text()").get()
+            news_item[ItemField.DATE.value] = story.xpath("./div/p/text()").get()
+            news_item[ItemField.URL.value] = url
+            news_item[ItemField.DESCRIPTION.value] = story.xpath("./div/p[position()=2]/text()").get()
+            news_item[ItemField.LOCATION.value] = ""
             self.seen_urls.add(url)
-            if news_item.get("url", ""):
+            if news_item.get(ItemField.URL.value, ""):
                 if "/article/cities" in news_item.get("url", ""):
-                    news_item["location"] = news_item["url"].split("/")[5]
+                    news_item[ItemField.LOCATION.value] = news_item[ItemField.URL.value].split("/")[5]
                     yield news_item
                 else:
                     # if current page does not contain location and the date info, follow
                     # the story url to get this info.
                     # Filter on duplicate entries
-                    yield response.follow(news_item["url"], callback=self.parse_story,
+                    yield response.follow(url=news_item[ItemField.URL.value], callback=self.parse_story,
                                       meta={"items": news_item},
                                       dont_filter=False)
 
     def parse_story(self, response):
         items = response.meta["items"]
-        items["location"] = response.xpath("normalize-space(.//span[@itemprop='dateModified']/preceding-sibling::text()[1])").get().split("|")[0].strip(" ") or ""
+        items[ItemField.LOCATION.value] = response.xpath("normalize-space(.//span[@itemprop='dateModified']/preceding-sibling::text()[1])").get().split("|")[0].strip(" ") or ""
         yield items
