@@ -26,13 +26,22 @@ class CrimeNewsSpider(CrawlSpider):
 
     )
 
+    def __init__(self):
+        super().__init__()
+        self.india_today = IndiaTodayParser()
+        self.indian_express = IndianExpressParser()
+
+
     def parse_start_url(self, response):
         domain = response.url.split("//")[1].split(".")[1]
         if "indiatoday" in domain:
-            india_today = IndiaTodayParser()
-            yield from india_today.parse_front_page(response)
+            IndiaTodayParser.CLICKS += 1
+            yield from self.india_today.parse_front_page(response)
         if "indianexpress" in response.url:
-            indian_express = IndianExpressParser()
-            yield from indian_express.parse_front_page(response)
-
+            IndianExpressParser.CLICKS += 1
+            yield from self.indian_express.parse_front_page(response)
     
+    def closed(self, reason):
+        self.indian_express.logger.info(f"Total web page clicks: {IndianExpressParser.CLICKS}")
+        self.india_today.logger.info(f"Total Load more clicks: {IndiaTodayParser.LOAD_MORE_CLICKS}")
+        self.india_today.logger.info(f"Total web page clicks: {IndiaTodayParser.CLICKS}")

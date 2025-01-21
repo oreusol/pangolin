@@ -9,13 +9,18 @@ from news_scrapper.const import ItemField
 class IndianExpressParser(NewsWebsiteParser):
     """Parses data from indianexpress.com website"""
     
+    LOAD_MORE_CLICKS = 0
+    CLICKS = 0
+
     def __init__(self):
         config = load_config(file_path=self.CONFIG_PATH)
         self.config = config.get("indian_express_parser", {})
+        logger_level = INFO
+        logger_path = "/home/madhura/projects/pangolin/crime_news_scrapper/indian_express.log"
         if self.config:
-            log_level = self.config.get("log_level", INFO)
-            log_path = self.config.get("file_name", "/home/madhura/projects/pangolin/crime_news_scrapper/indian_express.log")
-        super().__init__(log_level=log_level, file_name=log_path)
+            logger_level = self.config.get("log_level", INFO)
+            logger_path = self.config.get("file_name", "/home/madhura/projects/pangolin/crime_news_scrapper/indian_express.log")
+        super().__init__(log_level=logger_level, file_name=logger_path)
         self.seen_urls = set()
         self.source = "TheIndianEXPRESS"
 
@@ -71,7 +76,8 @@ class IndianExpressParser(NewsWebsiteParser):
                             args={'lua_source': self.lua_script, "timeout": 3000},)
 
     def parse_data(self, response):
-        self.logger.info(f"Total Load more clicks: {response.data.get('click_count', 0)}")
+        IndianExpressParser.LOAD_MORE_CLICKS = response.data.get('click_count', 0)
+        self.logger.info(f"Total Load more clicks: {IndianExpressParser.LOAD_MORE_CLICKS}")
         # once load more is done, response is received and parsed in order to get title, url,
         # description, location and the date of the story using xpath selectors.
         for story in response.xpath("//div[@class='details']"):
@@ -102,6 +108,7 @@ class IndianExpressParser(NewsWebsiteParser):
                                       dont_filter=False)
 
     def parse_story(self, response):
+        IndianExpressParser.CLICKS += 1
         items = response.meta["items"]
         items[ItemField.LOCATION.value] = response.xpath("normalize-space(.//span[@itemprop='dateModified']/preceding-sibling::text()[1])").get().split("|")[0].strip(" ") or ""
         yield items

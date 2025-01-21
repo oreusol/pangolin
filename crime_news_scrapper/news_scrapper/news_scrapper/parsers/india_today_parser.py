@@ -12,6 +12,9 @@ from config import load_config
 class IndiaTodayParser(NewsWebsiteParser):
     """Parses data from indianexpress.com website"""
 
+    CLICKS = 0
+    LOAD_MORE_CLICKS = 0
+
     def __init__(self):
         config = load_config(file_path=self.CONFIG_PATH)
         self.config = config.get("india_today_parser", {})
@@ -83,8 +86,9 @@ class IndiaTodayParser(NewsWebsiteParser):
                                       meta={"items": item},
                                       dont_filter=False)
 
-        # Keep checking if there is more content to load and if yes, load and get its data similarly.
-        # filter duplicate links
+        # Keep checking if there is more content to load and if yes, load and
+        # get its data similarly. filter duplicate links
+        IndiaTodayParser.LOAD_MORE_CLICKS = response.meta['page']
         self.logger.debug(f"Loading page: {response.meta['page'] + 1}")
         if data.get("data", {}).get("is_load_more", "") and data.get("data", {}).get("is_load_more") == 1:
             ajax_url = "https://www.indiatoday.in/api/ajax/loadmorecontent"
@@ -102,11 +106,10 @@ class IndiaTodayParser(NewsWebsiteParser):
                 meta={"page": page, "pagepath": pagepath},
                 dont_filter=True,)
 
-
     def parse_story(self, response):
         # Parse story content using xpath selectors to get story date and the location.
+        IndiaTodayParser.CLICKS += 1
         items = response.meta["items"]
         items[ItemField.LOCATION.value] = response.xpath(".//span[@class='jsx-ace90f4eca22afc7 Story_stryloction__IUgpi']/text()").get()
         items[ItemField.DATE.value] = response.xpath(".//span[@class='jsx-ace90f4eca22afc7 strydate']/text()").extract()
         yield items
-
