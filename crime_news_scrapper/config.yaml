@@ -4,3 +4,14 @@ india_today_parser:
 indian_express_parser:
   log_level: INFO
   file_name: "/home/madhura/projects/pangolin/crime_news_scrapper/indian_express.log"
+spider:
+  indiatoday.in:
+    start_url: "https://www.indiatoday.in/crime"
+    allow: r"https://www\.indiatoday\.in/crime(/.*)?$"
+    unique: True
+    follow: True
+  indianexpress.com:
+    start_url: "https://www.indianexpress.com/about/crime-news"
+    allow: r"https://www\.indianexpress\.com/about/crime-news/"
+    unique: True
+    follow: True
