@@ -1,6 +1,10 @@
 six
 scrapy==2.11.2
-scrapy-splash==0.9.0
+scrapy-splash
 pyyaml
 python-json-logger
 pre-commit
+black
+flake8
+pylint
+autoflake
