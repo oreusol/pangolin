@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crime_news_scrapper"
+version = "0.1.0"
+dependencies = [
+  "six",
+  "scrapy==2.11.2",
+  "scrapy-splash==0.9.0",
+  "pyyaml",
+  "python-json-logger",
+  "pre-commit",
+]
+requires-python = ">=3.12"
+authors = [
+  {name = "Madhura Vora", email = "mandemadhura@gmail.com"},
+]
+maintainers = [
+  {name = "Madhura Vora", email = "mandemadhura@gmail.com"}
+]
+description = "An application to scrap data from news sites."
+readme = "README.md"
+keywords = ["scrap", "scrapy", "crime", "news", "crawl", "spider", "xpath", "css", "selectors"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Programming Language :: Python"
+]
+
+[project.urls]
+Homepage = "https://github.com/oreusol/pangolin"
+Documentation = "https://github.com/oreusol/pangolin"
+Repository = "https://github.com/oreusol/pangolin.git"
+Issues = "https://github.com/oreusol/pangolin/issues"
