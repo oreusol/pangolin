@@ -1,10 +1,12 @@
 india_today_parser:
   log_level: INFO
-  file_name: "/home/madhura/projects/pangolin/crime_news_scrapper/india_today.log"
+  file_name: "india_today.log"
 indian_express_parser:
   log_level: INFO
-  file_name: "/home/madhura/projects/pangolin/crime_news_scrapper/indian_express.log"
+  file_name: "indian_express.log"
 spider:
+  log_level: INFO
+  file_name: "crime_news_crawler.log"
   indiatoday.in:
     start_url: "https://www.indiatoday.in/crime"
     allow: r"https://www\.indiatoday\.in/crime(/.*)?$"

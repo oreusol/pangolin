@@ -112,3 +112,4 @@ SPIDER_MIDDLEWARES = {
 }
 DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
 HTTPCACHE_STORAGE = 'scrapy_splash.SplashAwareFSCacheStorage'
+CUSTOM_CONFIG_PATH='/home/madhura/projects/pangolin/crime_news_scrapper/config.yaml'
