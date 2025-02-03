@@ -22,6 +22,7 @@ from typing import Iterable, Union
 from scrapy_splash import SplashRequest
 from scrapy.http import Request
 from scrapy.http import TextResponse
+from scrapy.loader import ItemLoader
 
 from config import get_config_path, load_config
 from ..items import NewsScrapperItem
@@ -137,36 +138,33 @@ class IndianExpressParser(NewsWebsiteParser):
         # once load more is done, response is received and parsed in order to get title, url,
         # description, location and the date of the story using xpath selectors.
         for story in response.xpath("//div[@class='details']"):
-            news_item = NewsScrapperItem()
+            loader = ItemLoader(item=NewsScrapperItem(), selector=story)
             url = story.xpath("./div/h3/a/@href").get()
             # Keep a track of already visited URLs in order to avoid duplication.
             if self.seen_urls:
                 if url in self.seen_urls:
                     self.logger.info(f"This data is already scrapped: {url}. Hence continuing...")
                     continue
-            news_item[ItemField.SOURCE.value] = self.source
-            news_item[ItemField.TITLE.value] = story.xpath("./div/h3/a/text()").get()
-            news_item[ItemField.DATE.value] = story.xpath("./div/p/text()").get()
-            news_item[ItemField.URL.value] = url
-            news_item[ItemField.DESCRIPTION.value] = story.xpath(
-                "./div/p[position()=2]/text()"
-            ).get()
-            news_item[ItemField.LOCATION.value] = ""
+            date = story.xpath("./div/p/text()").get()
+            loader.add_value(ItemField.SOURCE.value, self.source)
+            loader.add_xpath(ItemField.TITLE.value, "./div/h3/a/text()")
+            loader.add_value(ItemField.URL.value, url)
+            loader.add_value(ItemField.DATE.value, date)
+            loader.add_xpath(ItemField.DESCRIPTION.value, "./div/p[position()=2]/text()")
+
             self.seen_urls.add(url)
-            if news_item.get(ItemField.URL.value, ""):
-                if "/article/cities" in news_item.get("url", ""):
-                    news_item[ItemField.LOCATION.value] = news_item[ItemField.URL.value].split("/")[
-                        5
-                    ]
-                    yield news_item
+            if url:
+                if "/article/cities" in url:
+                    loader.add_value(ItemField.LOCATION.value, url.split("/")[5])
+                    yield loader.load_item()
                 else:
                     # if current page does not contain location and the date info, follow
                     # the story url to get this info.
                     # Filter on duplicate entries
                     yield response.follow(
-                        url=news_item[ItemField.URL.value],
+                        url=url,
                         callback=self.parse_story,
-                        meta={"items": news_item},
+                        meta={"loader": loader},
                         dont_filter=False,
                     )
 
@@ -179,8 +177,8 @@ class IndianExpressParser(NewsWebsiteParser):
         :return: Iterable of `NewsScrapperItem` object
         """
         IndianExpressParser.CLICKS += 1
-        items = response.meta["items"]
-        items[ItemField.LOCATION.value] = (
+        loader = response.meta["loader"]
+        location = (
             response.xpath(
                 "normalize-space(.//span[@itemprop='dateModified']/preceding-sibling::text()[1])"
             )
@@ -189,4 +187,5 @@ class IndianExpressParser(NewsWebsiteParser):
             .strip(" ")
             or ""
         )
-        yield items
+        loader.add_value(ItemField.LOCATION.value, location)
+        yield loader.load_item()

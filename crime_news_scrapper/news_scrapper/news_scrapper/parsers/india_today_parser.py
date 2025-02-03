@@ -24,6 +24,7 @@ from typing import Iterable, Iterator
 import scrapy
 from scrapy.http import Request
 from scrapy.http import TextResponse
+from scrapy.loader import ItemLoader
 
 from config import get_config_path, load_config
 from ..items import NewsScrapperItem
@@ -76,26 +77,25 @@ class IndiaTodayParser(NewsWebsiteParser):
         # "article" will give list of stories. Iterating those can give value for
         # story title, story url and the description by using appropriate selector.
         for crime_news in response.xpath(".//article"):
-            news_item = NewsScrapperItem()
-            news_item[ItemField.SOURCE.value] = self.source
-            news_item[ItemField.TITLE.value] = crime_news.xpath("./div/div/a/@title").get()
-            news_item[ItemField.URL.value] = crime_news.xpath("./div/div/a/@href").get()
-            news_item[ItemField.DESCRIPTION.value] = crime_news.xpath(
-                "./div/div/div/p/text()"
-            ).get()
-            if news_item[ItemField.URL.value] is not None:
+            loader = ItemLoader(item=NewsScrapperItem(), selector=crime_news)
+            loader.add_value(ItemField.SOURCE.value, self.source)
+            loader.add_xpath(ItemField.TITLE.value, "./div/div/a/@title")
+            loader.add_xpath(ItemField.URL.value, "./div/div/a/@href")
+            loader.add_xpath(ItemField.DESCRIPTION.value, "./div/div/div/p/text()")
+            if loader.get_output_value(ItemField.URL.value) is not None:
                 # Again make a request to a specific story in order to get the date and
                 # the location associated with it. Pass already created news_item dictionary
                 # as its meta field which will be passed in the next request and will be available
                 # in the response so that same dictionary can be updated for location and date.
                 # filter duplicate links hence dont_filter=False
                 self.logger.debug(
-                    f"Fetching the data from the story: {news_item[ItemField.URL.value]} page"
+                    f"Fetching the data from the story: "
+                    f"{loader.get_output_value(ItemField.URL.value)}"
                 )
                 yield response.follow(
-                    url=news_item[ItemField.URL.value],
+                    url=loader.get_output_value(ItemField.URL.value),
                     callback=self.parse_story,
-                    meta={"items": news_item},
+                    meta={"loader": loader},
                     dont_filter=False,
                 )
 
@@ -133,19 +133,20 @@ class IndiaTodayParser(NewsWebsiteParser):
         data = json.loads(response.text)
         new_stories = data.get("data", {}).get("content", {})
         for new_story in new_stories:
-            item = NewsScrapperItem()
-            item[ItemField.SOURCE.value] = self.source
-            item[ItemField.TITLE.value] = new_story.get("title")
-            item[ItemField.DESCRIPTION.value] = new_story.get("description_short")
-            item[ItemField.URL.value] = new_story.get("canonical_url")
-            if item[ItemField.URL.value] is not None:
+            loader = ItemLoader(item=NewsScrapperItem(), selector=new_story)
+            loader.add_value(ItemField.SOURCE.value, self.source)
+            loader.add_value(ItemField.TITLE.value, new_story.get("title"))
+            loader.add_value(ItemField.DESCRIPTION.value, new_story.get("description_short"))
+            loader.add_value(ItemField.URL.value, new_story.get("canonical_url"))
+
+            if loader.get_output_value(ItemField.URL.value) is not None:
                 # Again make a request to a specific story in order to get the date and
                 # the location associated with it.
                 # filter duplicate links
                 yield response.follow(
-                    url=item[ItemField.URL.value],
+                    url=loader.get_output_value(ItemField.URL.value),
                     callback=self.parse_story,
-                    meta={"items": item},
+                    meta={"loader": loader},
                     dont_filter=False,
                 )
 
@@ -183,11 +184,11 @@ class IndiaTodayParser(NewsWebsiteParser):
         """
         # Parse story content using xpath selectors to get story date and the location.
         IndiaTodayParser.CLICKS += 1
-        items = response.meta["items"]
-        items[ItemField.LOCATION.value] = response.xpath(
+        loader = response.meta["loader"]
+        location = response.xpath(
             ".//span[@class='jsx-ace90f4eca22afc7 Story_stryloction__IUgpi']/text()"
         ).get()
-        items[ItemField.DATE.value] = response.xpath(
-            ".//span[@class='jsx-ace90f4eca22afc7 strydate']/text()"
-        ).extract()
-        yield items
+        date = response.xpath(".//span[@class='jsx-ace90f4eca22afc7 strydate']/text()").extract()
+        loader.add_value(ItemField.LOCATION.value, location)
+        loader.add_value(ItemField.DATE.value, date[2])
+        yield loader.load_item()

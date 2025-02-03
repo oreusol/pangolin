@@ -1,6 +1,6 @@
 six
 scrapy==2.11.2
-scrapy-splash
+scrapy-splash==0.9.0
 pyyaml
 python-json-logger
 pre-commit
