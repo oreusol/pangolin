@@ -28,7 +28,6 @@ def get_config_path() -> str:
         yaml_config_path = os.getenv("CUSTOM_CONFIG_PATH")
     else:
         yaml_config_path = settings.get("CUSTOM_CONFIG_PATH")
-    print(f"YAML config path: {yaml_config_path}")
     return yaml_config_path
 
 

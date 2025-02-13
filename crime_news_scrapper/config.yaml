@@ -17,3 +17,14 @@ spider:
     allow: r"https://www\.indianexpress\.com/about/crime-news/"
     unique: True
     follow: True
+database:
+  db_name: "crime_news_db"
+  username: "crimescrapper"
+  host: "localhost"
+  port: "5432"
+  table_name: "crimedata"
+  log_level: INFO
+  file_name: "database.log"
+pipeline:
+  log_level: INFO
+  file_name: "pipeline.log"

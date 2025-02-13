@@ -178,6 +178,7 @@ class IndianExpressParser(NewsWebsiteParser):
         """
         IndianExpressParser.CLICKS += 1
         loader = response.meta["loader"]
+        location = None
         location = (
             response.xpath(
                 "normalize-space(.//span[@itemprop='dateModified']/preceding-sibling::text()[1])"

@@ -133,9 +133,15 @@ class IndiaTodayParser(NewsWebsiteParser):
         data = json.loads(response.text)
         new_stories = data.get("data", {}).get("content", {})
         for new_story in new_stories:
+            title = new_story.get("title")
+            if title.lower() == "this article is no longer available":
+                self.logger.debug(
+                    f"This story is not available, hence skipping: {new_story.get("canonical_url")}"
+                )
+                continue
             loader = ItemLoader(item=NewsScrapperItem(), selector=new_story)
             loader.add_value(ItemField.SOURCE.value, self.source)
-            loader.add_value(ItemField.TITLE.value, new_story.get("title"))
+            loader.add_value(ItemField.TITLE.value, title)
             loader.add_value(ItemField.DESCRIPTION.value, new_story.get("description_short"))
             loader.add_value(ItemField.URL.value, new_story.get("canonical_url"))
 
@@ -184,11 +190,15 @@ class IndiaTodayParser(NewsWebsiteParser):
         """
         # Parse story content using xpath selectors to get story date and the location.
         IndiaTodayParser.CLICKS += 1
+        date = None
+        location = None
         loader = response.meta["loader"]
         location = response.xpath(
             ".//span[@class='jsx-ace90f4eca22afc7 Story_stryloction__IUgpi']/text()"
         ).get()
         date = response.xpath(".//span[@class='jsx-ace90f4eca22afc7 strydate']/text()").extract()
         loader.add_value(ItemField.LOCATION.value, location)
-        loader.add_value(ItemField.DATE.value, date[2])
+        if date:
+            date = date[2]
+        loader.add_value(ItemField.DATE.value, date)
         yield loader.load_item()

@@ -25,7 +25,7 @@ For example:
 
 from datetime import datetime
 import re
-from typing import Union
+from typing import NoReturn, Union
 
 import scrapy
 from scrapy.loader.processors import MapCompose, TakeFirst
@@ -41,7 +41,7 @@ def clean_whitespace(value: str) -> str:
     return value.strip()
 
 
-def convert_date(date: Union[list, str]) -> datetime:
+def convert_date(date: Union[list, str]) -> datetime | NoReturn:
     """
     Extract data from the given input and convert it
     to a required strctured format
@@ -56,6 +56,8 @@ def convert_date(date: Union[list, str]) -> datetime:
         "%b %d, %Y %H:%M IST",
         "%B %d, %Y %H:%M IST",
     ]
+    if not date:
+        raise ValueError(f"date string is wither empty or None: {date}")
     for fmt in formats:
         try:
             dt_obj = datetime.strptime(date, fmt)
@@ -97,6 +99,6 @@ class NewsScrapperItem(scrapy.Item):
         input_processor=MapCompose(clean_whitespace), output_processor=TakeFirst()
     )
     date = scrapy.Field(
-        input_processor=MapCompose(convert_date, clean_whitespace),
+        input_processor=MapCompose(clean_whitespace, convert_date),
         output_processor=TakeFirst(),
     )
