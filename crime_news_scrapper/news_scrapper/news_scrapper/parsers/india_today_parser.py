@@ -130,11 +130,15 @@ class IndiaTodayParser(NewsWebsiteParser):
         :param response: An instance of `scrapy.FormRequest`
         :return:  Yields iterable of `scrapy.Request` objects
         """
+        stories_to_skip = [
+            "this article is no longer available",
+            "this story is no longer available",
+        ]
         data = json.loads(response.text)
         new_stories = data.get("data", {}).get("content", {})
         for new_story in new_stories:
             title = new_story.get("title")
-            if title.lower() == "this article is no longer available":
+            if title.lower() in stories_to_skip:
                 self.logger.debug(
                     f"This story is not available, hence skipping: {new_story.get("canonical_url")}"
                 )
@@ -190,8 +194,6 @@ class IndiaTodayParser(NewsWebsiteParser):
         """
         # Parse story content using xpath selectors to get story date and the location.
         IndiaTodayParser.CLICKS += 1
-        date = None
-        location = None
         loader = response.meta["loader"]
         location = response.xpath(
             ".//span[@class='jsx-ace90f4eca22afc7 Story_stryloction__IUgpi']/text()"
