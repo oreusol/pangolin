@@ -28,3 +28,17 @@ class ItemField(Enum):
     URL = "url"
     LOCATION = "location"
     DATE = "date"
+
+
+class ParserType(Enum):
+    """Enum for different parser types"""
+
+    INDIATODAY = "INDIATODAYPARSER"
+    INDIANEXPRESS = "INDIANEXPRESSPARSER"
+
+
+class ClassMapping(Enum):
+    """Enum for class to its module mapping"""
+
+    INDIATODAYPARSER = "news_scrapper.parsers.india_today_parser.IndiaTodayParser"
+    INDIANEXPRESSPARSER = "news_scrapper.parsers.indian_express_parser.IndianExpressParser"
