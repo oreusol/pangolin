@@ -21,7 +21,8 @@ Following things are important to crawl multiple websites simultaneously.
 """
 
 import logging
-from typing import Union, Iterable
+import importlib
+from typing import Any, Union, Iterable
 
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
@@ -29,10 +30,7 @@ from scrapy import Request
 from scrapy.item import Item
 
 from config import load_config, get_config_path
-from ..parsers.india_today_parser import IndiaTodayParser
-from ..parsers.indian_express_parser import (
-    IndianExpressParser,
-)
+from ..const import ParserType, ClassMapping
 from ..log import set_up_logging
 
 
@@ -60,6 +58,11 @@ class CrimeNewsSpider(CrawlSpider):
         config_path = get_config_path()
         config = load_config(config_path=config_path)
         self.config = config.get("spider", {})
+        self.sites = self.config.get("sites_to_crawl", [])
+        if not self.sites:
+            raise ValueError(
+                "No any sites to crawl, there should be at least one site to start a crawl"
+            )
         log_level = self.config.get("log_level", "INFO")
         log_path = self.config.get(
             "file_name",
@@ -68,13 +71,11 @@ class CrimeNewsSpider(CrawlSpider):
         set_up_logging(logger=self.log, log_level=log_level, file_name=log_path)
         del self.config["log_level"]
         del self.config["file_name"]
-        self.india_today = IndiaTodayParser()
-        self.indian_express = IndianExpressParser()
+        del self.config["sites_to_crawl"]
         for domain, domain_config in self.config.items():
             self.allowed_domains.append(domain)
             # A list of URLs where the spider will begin to crawl from
             self.start_urls.append(domain_config.get("start_url", ""))
-
             # Rules for crawling websites(how they can be crawled)
             # Allow only specific given URL. Avoid duplication and follow
             # the subequent URLs from that URL.
@@ -93,6 +94,23 @@ class CrimeNewsSpider(CrawlSpider):
         self.rules = tuple(self.rules_list)
         self.log.info("Initiating crawl for %s", self.start_urls)
 
+    def get_parser(self, site: str) -> Any:
+        """
+        Dynamically imports the parser class and returns its instance
+        """
+        try:
+            self.log.info("Initializing the parser for %s:", site)
+            parser_type = ClassMapping[ParserType[site.upper()].value].value
+            module_path, class_name = parser_type.rsplit(".", 1)
+            self.log.info("Importing the module %s:", class_name)
+            module = importlib.import_module(module_path)
+            cls = getattr(module, class_name)
+            return cls()
+        except ImportError as i_err:
+            raise ImportError(f"Unable to import module for {site}: {i_err}") from i_err
+        except Exception as err:
+            raise Exception(f"Instantiation failed for a parser: {site}: {err}") from err
+
     def parse_start_url(
         self, response, **kwargs
     ) -> Union[Request, Item, Iterable[Union[Request, Item]]]:
@@ -106,14 +124,18 @@ class CrimeNewsSpider(CrawlSpider):
         ::return: `scrapy.http.Request` or `scrapy.Item` object or its iterable
         """
         domain = response.url.split("//")[1].split(".")[1]
-        if "indiatoday" in domain:
-            IndiaTodayParser.CLICKS += 1
-            self.log.info("Started crawling front page for %s", response.url)
-            yield from self.india_today.parse_front_page(response=response)
-        if "indianexpress" in response.url:
-            IndianExpressParser.CLICKS += 1
-            self.log.info("Started crawling front page for %s", response.url)
-            yield from self.indian_express.parse_front_page(response=response)
+        if ParserType.INDIATODAY.name.lower() in domain:
+            if ParserType.INDIATODAY.name.lower() in self.sites:
+                self.india_today = self.get_parser(site=ParserType.INDIATODAY.name)
+                self.india_today.CLICKS += 1
+                self.log.info("Started crawling front page for %s", response.url)
+                yield from self.india_today.parse_front_page(response=response)
+        if ParserType.INDIANEXPRESS.name.lower() in response.url:
+            if ParserType.INDIANEXPRESS.name.lower() in self.sites:
+                self.indian_express = self.get_parser(site=ParserType.INDIANEXPRESS.name)
+                self.indian_express.CLICKS += 1
+                self.log.info("Started crawling front page for %s", response.url)
+                yield from self.indian_express.parse_front_page(response=response)
 
     def closed(self, reason) -> None:
         """
@@ -122,6 +144,6 @@ class CrimeNewsSpider(CrawlSpider):
         :param reason: a string describing the spider closure reason
         """
         self.log.info("Closing the spider with reason as: %s", reason)
-        self.indian_express.logger.info(f"Total web page clicks: {IndianExpressParser.CLICKS}")
-        self.india_today.logger.info(f"Total Load more clicks: {IndiaTodayParser.LOAD_MORE_CLICKS}")
-        self.india_today.logger.info(f"Total web page clicks: {IndiaTodayParser.CLICKS}")
+        self.indian_express.logger.info(f"Total web page clicks: {self.indian_express.CLICKS}")
+        self.india_today.logger.info(f"Total Load more clicks: {self.india_today.LOAD_MORE_CLICKS}")
+        self.india_today.logger.info(f"Total web page clicks: {self.india_today.CLICKS}")
